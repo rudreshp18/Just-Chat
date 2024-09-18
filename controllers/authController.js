@@ -5,7 +5,6 @@ const jwtSecret = process.env.JWT_SECRET
 const crypto = require('crypto')
 const nodemailer = require('nodemailer')
 const senderMail = process.env.SENDER_MAIL
-const senderMailPass = process.env.PASS
 const appPass = process.env.APP_PASS
 
 // Generate JWT
