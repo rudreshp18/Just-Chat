@@ -46,7 +46,8 @@ const jwt = require('jsonwebtoken');
 const DbConnect = require('./dbConnection');
 require('dotenv').config();
 const verify = require('./controllers/verify');
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 10000;
+const HOST = '0.0.0.0';
 const authRoutes = require('./routes/authRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const { getAllUsers } = require('./controllers/userControllers');
@@ -264,10 +265,13 @@ async function broadcastUserList() {
 //     });
 // }
 
-server.listen(0, () => {
+server.listen(PORT, HOST, () => {
     // console.log(`Server running on http://localhost:${PORT}`);
     // console.log(`WebSocket server integrated on ws://localhost:${PORT}`);
-    const address = server.address();
-    console.log(`Server running on http://localhost:${address.port}`);
-    console.log(`WebSocket server integrated on ws://localhost:${address.port}`);
+
+    // const address = server.address();
+    // console.log(`Server running on http://localhost:${address.port}`);
+    // console.log(`WebSocket server integrated on ws://localhost:${address.port}`);
+
+    console.log(`Server with websocket service running on http://${HOST}:${PORT}/`);
 });
