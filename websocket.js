@@ -264,7 +264,7 @@ async function broadcastUserList() {
 //     });
 // }
 
-server.listen(PORT, () => {
+server.listen(0, () => {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`WebSocket server integrated on ws://localhost:${PORT}`);
 });
