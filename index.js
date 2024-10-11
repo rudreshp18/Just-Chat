@@ -58,7 +58,7 @@ const Group = require('./models/groupSchema')
 const app = express();
 const server = http.createServer(app);
 const activeConnections = new Map();
-
+const userChangeStream = User.watch();
 // WebSocket server
 const wss = new WebSocket.Server({ server });
 
@@ -111,6 +111,35 @@ wss.on('connection', async (ws, req) => {
         ws.close(1008, 'Authentication failed');
         return;
     }
+
+    userChangeStream.on('change', async (change) => {
+        console.log('User change detected:', change?.updateDescription?.updatedFields);
+        await broadcastUserList(); // Broadcast the updated user list to all clients
+    });
+
+    userChangeStream.on('error', (error) => {
+        console.error('Error in ChangeStream:', error);
+        // Reconnection or any fallback
+        if (error.code === 'ECONNRESET') {
+            // Reconnection
+            console.log('Connection reset. Reconnecting...');
+            process.exit(0); // Triggering Restart
+        }
+    });
+
+    // userChangeStream.on('change', async (change) => {
+    //     // on update and involves 'friends' field
+    //     if (change.operationType === 'update' && change.updateDescription?.updatedFields?.hasOwnProperty('friends')) {
+    //         console.log('Friends field change detected:', change.updateDescription.updatedFields.friends);
+
+    //         // Assuming change.documentKey contains the user ID, you can fetch the user's nickname if needed
+    //         // const updatedUser = await User.findById(change.documentKey._id).select('nickname');
+
+    //         // Broadcast the updated user list to all clients
+    //         await broadcastUserList();
+    //     }
+    // });
+
 
     await User.findByIdAndUpdate(user._id, { active: true, lastActive: new Date() });
 
@@ -244,7 +273,8 @@ wss.on('error', (error) => {
 });
 
 async function broadcastUserList() {
-    const users = await User.find();
+    const users = await User.find().select('email nickname _id lastActive active friends ots lastActivity');
+    // const user = await User.findOne({ nickname: nn }).select('-password');
     const groups = await Group.find();
     // const userList = JSON.stringify({ type: 'userList', users });
     const userGroupList = JSON.stringify({ users, groups });
@@ -273,5 +303,8 @@ server.listen(PORT, HOST, () => {
     // console.log(`Server running on http://localhost:${address.port}`);
     // console.log(`WebSocket server integrated on ws://localhost:${address.port}`);
 
+    //Cloud
     console.log(`Server with websocket service running on http://${HOST}:${PORT}/`);
 });
+
+// module.exports = { broadcastUserList };

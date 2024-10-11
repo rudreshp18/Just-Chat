@@ -6,11 +6,21 @@ const crypto = require('crypto')
 const nodemailer = require('nodemailer')
 const senderMail = process.env.SENDER_MAIL
 const appPass = process.env.APP_PASS
+const cookieParser = require('cookie-parser');
+const express = require("express")
+const app = express();
+app.use(cookieParser());
 
-// Generate JWT
-const generateToken = (id) => {
+// JWT Generation
+const generateTokenAccess = (id) => {
     return jwt.sign({ id }, jwtSecret, {
-        expiresIn: '1h',
+        expiresIn: '4h',
+    });
+}
+
+const generateTokenRefresh = (id) => {
+    return jwt.sign({ id }, jwtSecret, {
+        expiresIn: '7d',
     });
 }
 
@@ -22,7 +32,7 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// Function to send OTS via email
+// Sending OTS via email
 const sendOTS = async (email, ots) => {
     const mailOptions = {
         from: senderMail,
@@ -31,8 +41,8 @@ const sendOTS = async (email, ots) => {
         // text: `Please verify your using below link http://localhost:3000/auth/account/verify?email=${email}&ots=${ots}`
         html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-                <h2 style="color: #4CAF50; text-align: center;">Welcome to Our Platform!</h2>
-                
+                <h2 style="color: #d16c13; text-align: center;">Welcome to Our Platform!</h2>
+
                 <blockquote style="font-size: 16px; font-style: italic; text-align: center; color: #555;">
                     "ಮಾತು ಹಾಗೂ ಸಂವಾದವೇ ಮಾನವರ ಶ್ರೇಷ್ಠ ಆಸೆ. ಚರ್ಚೆಯ ಮೂಲಕ ಮನಸ್ಸುಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳುವುದು ಮತ್ತು ಸಂಬಂಧಗಳನ್ನು ಗಟ್ಟಿ ಮಾಡುವುದು ಸಾಧ್ಯ" - ಕನ್ನಡ ಸಾಹಿತ್ಯ
                 </blockquote>
@@ -42,7 +52,7 @@ const sendOTS = async (email, ots) => {
 
                 <div style="text-align: center; margin: 20px 0;">
                     <a href="http://localhost:3000/auth/account/verify?email=${email}&ots=${ots}" 
-                       style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-size: 16px;">
+                       style="background-color: #d16c13; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-size: 16px;">
                         Verify My Account
                     </a>
                 </div>
@@ -69,13 +79,23 @@ exports.otsVerify = async (req, res) => {
             return res.status(404).send('User not found')
         }
 
-        // Check if OTS matches and is still valid
-        if (user.ots === ots && user.otsExpiresAt > Date.now()) {
-            user.ots = 'Acc_Ver';  // Clear OTS
-            // user.otsExpiresAt = undefined;  // Clear OTS expiry
-            await user.save();
+        if (user.ots === 'Acc_Ver') {
+            return res.status(201).send('Account already verified!')
+        }
 
-            res.status(200).send('Account verified successfully')
+        // Check if OTS matches and is still valid
+        if (user.ots === ots) {
+            if (user.otsExpiresAt > Date.now()) {
+                user.ots = 'Acc_Ver';  // Clear OTS
+                // user.otsExpiresAt = undefined;  // Clear OTS expiry
+                await user.save();
+                res.status(200).json({ msg: 'Account verified successfully' })
+            } else if (user.otsExpiresAt < Date.now()) {
+                user.setOTS();
+                await user.save();
+                await sendOTS(user.email, user.ots);
+                res.status(200).json({ msg: 'OTS Expired! Resent' })
+            }
         } else {
             res.status(400).send('Invalid or expired OTS')
         }
@@ -89,9 +109,9 @@ exports.registerNewUser = async (req, res) => {
 
     try {
         const newUser = new User({ nickname, email, password })
-        console.log(newUser)
+        // console.log(newUser)
         newUser.setOTS()
-        console.log(newUser.ots)
+        // console.log(newUser.ots)
         await newUser.save()
 
         await sendOTS(email, newUser.ots)
@@ -100,7 +120,6 @@ exports.registerNewUser = async (req, res) => {
     catch (error) {
         res.status(400).json({ msg: "Registration failed", error: error })
     }
-
 }
 
 exports.loginUser = async (req, res) => {
@@ -110,10 +129,17 @@ exports.loginUser = async (req, res) => {
         const user = await User.findOne({ nickname });
         if (!user) return res.status(404).json({ msg: "User Not Found" })
         if (user && (await user.matchPassword(password))) {
-            const token = generateToken(user._id);
+            const aToken = generateTokenAccess(user._id);
+            const rToken = generateTokenRefresh(user._id);
+            res.cookie('refreshToken', rToken, {
+                httpOnly: true, // Prevent JavaScript access
+                secure: true,   // Use 'true' in production (HTTPS)
+                sameSite: 'Strict', // Strictly same-site policy
+                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+            });
             res.status(200).json({
                 token: {
-                    access: token
+                    access: aToken
                 }
             });
         } else {
@@ -138,8 +164,8 @@ exports.verifyUser = async (req, res) => {
             const decoded = jwt.verify(token, jwtSecret);
 
             // Get user from token
-            const user = await User.findById(decoded.id).select('_id nickname email friends');
-            if (!user) res.status(401).json({
+            const user = await User.findById(decoded.id).select('_id nickname email friends lastActivity');
+            if (!user) return res.status(401).json({
                 error: 'Not authorized, token failed'
             })
             res.status(201).json({ success: 'Verified', user: user })

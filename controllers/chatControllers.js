@@ -11,7 +11,7 @@ exports.addFriend = async function (req, res) {
     try {
         const user = await User.findOne({ nickname })
         // console.log(user)
-        if (!user) res.status(404).json({
+        if (!user) return res.status(404).json({
             msg: "User Not Found"
         })
 
@@ -54,7 +54,7 @@ exports.acceptFriend = async function (req, res) {
     try {
         const user = await User.findOne({ nickname })
 
-        if (!user) res.status(404).json({
+        if (!user) return res.status(404).json({
             msg: "User Not Found"
         })
 
@@ -117,6 +117,9 @@ exports.retrieveConvo = async function (req, res) {
             });
         }
 
+        currentUser.lastActivity = { chat: "user", name: nickname }
+        await currentUser.save()
+
         const conversations = await Message.find({
             $or: [
                 { sender: currentUser._id, receiver: otherUser._id },
@@ -159,7 +162,7 @@ exports.createZone = async function (req, res) {
             })
             return arr
         }
-        
+
         const newZone = new Group({
             zoneName,
             members: [...getMemberIds(), user._id],

@@ -20,7 +20,7 @@ const UserSchema = new mongoose.Schema(
         }],
         active: { type: Boolean, default: false },
         lastActive: { type: Date, default: Date.now },
-        // friendsId: { type: Array, default: [] }
+        lastActivity: { chat: { type: String, default: '' }, name: { type: String, default: '' } }
     },
     {
         timestamps: { type: Date, default: Date.now() }
