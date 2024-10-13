@@ -119,7 +119,7 @@ exports.retrieveConvo = async function (req, res) {
 
         currentUser.lastActivity = { chat: "user", name: nickname }
         await currentUser.save()
-
+        const uUser = await User.findById(decoded.id).select('-password');
         const conversations = await Message.find({
             $or: [
                 { sender: currentUser._id, receiver: otherUser._id },
@@ -129,7 +129,8 @@ exports.retrieveConvo = async function (req, res) {
 
         res.status(200).json({
             msg: "Conversations retrieved successfully",
-            conversations: conversations
+            conversations: conversations,
+            user: uUser
         });
     }
     catch (error) {

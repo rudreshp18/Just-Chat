@@ -104,6 +104,8 @@ wss.on('connection', async (ws, req) => {
         user = await User.findById(decoded.id);
         // console.log(`User ${user.nickname} connected`);
         activeConnections.set(user._id.toString(), ws);
+        await User.findByIdAndUpdate(user._id, { active: true, lastActive: new Date() });
+        broadcastUserList();
     }
     catch (error) {
         // console.log("Decode Error", error)
@@ -141,10 +143,10 @@ wss.on('connection', async (ws, req) => {
     // });
 
 
-    await User.findByIdAndUpdate(user._id, { active: true, lastActive: new Date() });
+    // await User.findByIdAndUpdate(user._id, { active: true, lastActive: new Date() });
 
-    // Broadcasting to all
-    broadcastUserList();
+    // // Broadcasting to all
+    // broadcastUserList();
     // broadcastGroupList();
 
     ws.on('message', async (message) => {
