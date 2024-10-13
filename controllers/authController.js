@@ -51,13 +51,13 @@ const sendOTS = async (email, ots) => {
                 <p>ನಮ್ಮೊಂದಿಗೆ ನೋಂದಣಿ ಮಾಡಿದ್ದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ಖಾತೆಯನ್ನು ಪೂರ್ಣಗೊಳಿಸಲು, ದಯವಿಟ್ಟು ಕೆಳಗಿನ ಗುಂಡಿಯನ್ನು ಕ್ಲಿಕ್ ಮಾಡಿ ಮತ್ತು ನಿಮ್ಮ ಮಿಂಚೋಲೆ ವಿಳಾಸವನ್ನು ಪರಿಶೀಲಿಸಿ:</p>
 
                 <div style="text-align: center; margin: 20px 0;">
-                    <a href="http://localhost:3000/auth/account/verify?email=${email}&ots=${ots}" 
+                    <a href="https://retro-chat-react.vercel.app/auth/account/verify?email=${email}&ots=${ots}" 
                        style="background-color: #d16c13; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-size: 16px;">
                         Verify My Account
                     </a>
                 </div>
                 <p>ಗುಂಡಿ ಕೆಲಸ ಮಾಡದಿದ್ದರೆ, ಈ ಲಿಂಕ್ ಅನ್ನು ನಕಲಿಸಿ ಮತ್ತು ನಿಮ್ಮ ಅಂತರ್ಜಾಲವನ್ನು ಶೋಧಿಸುವ ತಂತ್ರಾಂಶದಲ್ಲಿ ಅಂಟಿಸಿ:</p>
-                <p style="word-wrap: break-word;">http://localhost:3000/auth/account/verify?email=${email}&ots=${ots}</p>
+                <p style="word-wrap: break-word;">https://retro-chat-react.vercel.app/auth/account/verify?email=${email}&ots=${ots}</p>
                 <hr style="border: none; height: 1px; background-color: #e0e0e0;" />
                 <p style="color: #888888; text-align: center; font-size: 12px;">ಈ ಮಿಂಚೋಲೆ ಅನ್ನು ನೀವು ನಿರೀಕ್ಷಿಸದಿದ್ದರೆ, ದಯವಿಟ್ಟು ಇದನ್ನು ನಿರ್ಲಕ್ಷಿಸಿ.</p>
                 <p style="color: #888888; text-align: center; font-size: 12px;">&copy; 2024 CuriousCoders. All rights reserved.</p>
